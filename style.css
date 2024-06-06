@@ -17,6 +17,7 @@ body {
 
 header {
     color: #fff;
+    margin-bottom: 20px;
 }
 
 .container {
@@ -27,16 +28,11 @@ header {
 
 .table {
     width: 200px;
-    height: 200px;
     display: flex;
-    align-items: center;
-    justify-content: center;
     flex-direction: column;
 }
 
 .table .row {
-    width: 200px;
-    height: 20px;
     display: flex;
 }
 
@@ -74,6 +70,6 @@ header {
     color: orange;
 }
 
-.row .box.flagged{
-    content: '-2';
+.row .box.flagged {
+    background: #FFD700; /* Optional: change the background color for flagged boxes */
 }
