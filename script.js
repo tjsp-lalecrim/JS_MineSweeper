@@ -1,17 +1,20 @@
 const ROWS = 10;
 const elTable = document.querySelector('.table');
-
 let mineMap = [];
 
-function createMap(quantity) {
-    mineMap = [];
+function init() {
+    clearTable();
+    createMap(ROWS);
+    addRowElements(ROWS);
+}
 
-    for (let i = 0; i < quantity; i++) {
-        const row = new Array(quantity).fill(0);
-        mineMap.push(row);
-    }
+function clearTable() {
+    elTable.innerHTML = '';
+}
 
-    placeBombs(quantity);
+function createMap(size) {
+    mineMap = Array.from({ length: size }, () => Array(size).fill(0));
+    placeBombs(size);
 }
 
 function placeBombs(quantity) {
@@ -21,156 +24,55 @@ function placeBombs(quantity) {
 }
 
 function placeBombRandomly() {
-    let randRow = Math.floor(Math.random() * mineMap.length);
-    let randCol = Math.floor(Math.random() * mineMap.length);
-    if (mineMap[randRow][randCol] !== -1) {
-        placeBomb(randRow, randCol);
-    } else {
-        placeBombRandomly();
-    }
-}
-
-function placeBomb(i, j) {
-    mineMap[i][j] = -1;
+    let randRow, randCol;
+    do {
+        randRow = Math.floor(Math.random() * mineMap.length);
+        randCol = Math.floor(Math.random() * mineMap.length);
+    } while (mineMap[randRow][randCol] === -1);
+    mineMap[randRow][randCol] = -1;
 }
 
 function countBombsAround(i, j) {
-    if (mineMap[i][j] === -1) {
-        return -1;
-    }
-
+    if (mineMap[i][j] === -1) return -1;
     let count = 0;
-
-    if (i > 0) {
-        if (mineMap[i - 1][j - 1] === -1) {
-            count++;
-        }
-        if (mineMap[i - 1][j] === -1) {
-            count++;
-        }
-        if (mineMap[i - 1][j + 1] === -1) {
-            count++;
+    for (let x = -1; x <= 1; x++) {
+        for (let y = -1; y <= 1; y++) {
+            if (x === 0 && y === 0) continue;
+            const ni = i + x, nj = j + y;
+            if (boxExist(ni, nj) && mineMap[ni][nj] === -1) count++;
         }
     }
-
-    if (j >= 0 && mineMap[i][j - 1] === -1) {
-        count++;
-    }
-    if (j < mineMap.length && mineMap[i][j + 1] === -1) {
-        count++;
-    }
-
-    if (i + 1 < mineMap.length) {
-        if (mineMap[i + 1][j - 1] === -1) {
-            count++;
-        }
-        if (mineMap[i + 1][j] === -1) {
-            count++;
-        }
-        if (mineMap[i + 1][j + 1] === -1) {
-            count++;
-        }
-    }
-
     return count;
 }
 
-function addRowElements(quantity) {
-    for (let i = 0; i < quantity; i++) {
+function addRowElements(size) {
+    for (let i = 0; i < size; i++) {
         const elRow = document.createElement('div');
         elRow.id = `${i}`;
         elRow.classList.add('row');
-
-        addBoxElements(elRow, quantity);
-
+        addBoxElements(elRow, size);
         elTable.appendChild(elRow);
     }
 }
 
-function addBoxElements(elRow, quantity) {
-    for (let j = 0; j < quantity; j++) {
+function addBoxElements(elRow, size) {
+    for (let j = 0; j < size; j++) {
         const elBox = document.createElement('div');
         elBox.id = `${elRow.id}-${j}`;
-        elBox.classList.add('box');
-        elBox.classList.add('hidden');
-
-        elBox.addEventListener('click', function (e) {
-            const elBox = e.target;
-
-            const coords = getBoxElementCoordinates(elBox);
-            const [i, j] = coords;
-
-            if (mineMap[i][j] === -1) {
-                handleGameOver();
-            } else {
-                revealBox(elBox);
-            }
-        });
+        elBox.classList.add('box', 'hidden');
+        elBox.addEventListener('click', handleBoxClick);
         elBox.addEventListener('contextmenu', placeFlag);
         elRow.appendChild(elBox);
     }
 }
 
-function getBoxElementCoordinates(elBox) {
-    const coords = elBox.id.split('-');
-    const i = Number.parseInt(coords[0]);
-    const j = Number.parseInt(coords[1]);
-    return [i, j];
-}
-
-function updateBoxElement(elBox) {
-    elBox.classList.remove("hidden");
-    elBox.classList.remove("flagged");
-
-    const coords = getBoxElementCoordinates(elBox);
-    const [i, j] = coords;
-    const bombsAround = countBombsAround(i, j);
-    mineMap[i][j] = bombsAround;
-
-    _updateBoxElementInnerText(elBox, bombsAround);
-    _updateBoxElementColor(elBox, bombsAround);
-}
-
-function _updateBoxElementInnerText(elBox, bombsAround) {
-    elBox.innerText = bombsAround !== 0 ? bombsAround : '';
-}
-
-function _updateBoxElementColor(elBox, bombsAround) {
-    if (bombsAround === 0) {
-        elBox.classList.add('gray');
-    }
-    if (bombsAround === 1) {
-        elBox.classList.add('green');
-    }
-    else if (bombsAround === 2) {
-        elBox.classList.add('blue');
-    }
-    else if (bombsAround === 3) {
-        elBox.classList.add('red');
-    }
-    else if (bombsAround === 4) {
-        elBox.classList.add('purple');
-    }
-    else if (bombsAround > 5) {
-        elBox.classList.add('orange');
-    }
-}
-
-function revealBox(elBox) {
-    if (!elBox || !elBox.classList.contains('hidden') || elBox.classList.contains('flagged')) {
-        return;
-    }
-
-    const coords = getBoxElementCoordinates(elBox);
-    const [i, j] = coords;
-
-    updateBoxElement(elBox);
-
-    console.log('value', mineMap[i][j]);
-
-    if (mineMap[i][j] === 0) {
-        console.log('call checkBoxes');
-        checkEmptyBoxesAround(i, j);
+function handleBoxClick(e) {
+    const elBox = e.target;
+    const [i, j] = getBoxElementCoordinates(elBox);
+    if (mineMap[i][j] === -1) {
+        handleGameOver();
+    } else {
+        revealBox(elBox);
     }
 }
 
@@ -178,56 +80,60 @@ function placeFlag(event) {
     event.preventDefault();
     const elBox = event.target;
     elBox.classList.toggle('flagged');
+    elBox.innerText = elBox.classList.contains('flagged') ? '🚩' : '';
+}
 
-    if (elBox.classList.contains('flagged')) {
-        elBox.innerText = -2;
-    } else {
-        elBox.innerText = '';
+function getBoxElementCoordinates(elBox) {
+    return elBox.id.split('-').map(Number);
+}
+
+function updateBoxElement(elBox) {
+    const [i, j] = getBoxElementCoordinates(elBox);
+    const bombsAround = countBombsAround(i, j);
+    mineMap[i][j] = bombsAround;
+    elBox.classList.remove('hidden', 'flagged');
+    elBox.innerText = bombsAround !== 0 ? bombsAround : '';
+    elBox.className = 'box ' + getColorClass(bombsAround);
+}
+
+function getColorClass(bombsAround) {
+    switch (bombsAround) {
+        case 1: return 'green';
+        case 2: return 'blue';
+        case 3: return 'red';
+        case 4: return 'purple';
+        case 5: return 'orange'
+        default: return 'gray';
     }
 }
 
-function handleGameOver() {
-    const elRows = elTable.getElementsByClassName('row');
-
-    Array.from(elRows).forEach(elRow => {
-        const elBoxes = elRow.getElementsByClassName('box');
-        Array.from(elBoxes).forEach(elBox => {
-            updateBoxElement(elBox);
-        });
-    });
+function revealBox(elBox) {
+    if (!elBox || !elBox.classList.contains('hidden') || elBox.classList.contains('flagged')) return;
+    updateBoxElement(elBox);
+    const [i, j] = getBoxElementCoordinates(elBox);
+    if (mineMap[i][j] === 0) {
+        checkEmptyBoxesAround(i, j);
+    }
 }
 
 function checkEmptyBoxesAround(i, j) {
-    let adjacentBoxTop = getBoxByCoordinates(i + 1, j);
-    let adjacentBoxBottom = getBoxByCoordinates(i - 1, j);
-    let adjacentBoxLeft = getBoxByCoordinates(i, j - 1);
-    let adjacentBoxRight = getBoxByCoordinates(i, j + 1);
-
-    revealBox(adjacentBoxTop);
-    revealBox(adjacentBoxBottom);
-    revealBox(adjacentBoxLeft);
-    revealBox(adjacentBoxRight);
+    const directions = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    directions.forEach(([dx, dy]) => {
+        const ni = i + dx, nj = j + dy;
+        if (boxExist(ni, nj)) revealBox(getBoxByCoordinates(ni, nj));
+    });
 }
 
 function getBoxByCoordinates(i, j) {
-    const id = `${i}-${j}`;
-    return document.getElementById(id);
+    return document.getElementById(`${i}-${j}`);
 }
 
 function boxExist(i, j) {
     return i >= 0 && i < mineMap.length && j >= 0 && j < mineMap.length;
 }
 
-function clearTable() {
-    elTable.innerHTML = '';
+function handleGameOver() {
+    document.querySelectorAll('.box').forEach(updateBoxElement);
 }
-
-function init() {
-    clearTable();
-    createMap(ROWS);
-    addRowElements(ROWS);
-}
-
 
 init();
-
