@@ -1,230 +1,236 @@
-const SIZE = 10;
+const GRID_SIZE = 10;
+const TOTAL_BOMBS = 10;
+const INITIAL_COUNTDOWN = 100;
 
-const elTable = document.querySelector('.table');
-const elCountdown = document.getElementById('countdown');
-const elBombs = document.getElementById('bombs');
-const elFlags = document.getElementById('flags');
-const elRestartBtn = document.querySelector('.restart');
+const tableElement = document.querySelector('.table');
+const countdownElement = document.getElementById('countdown');
+const bombsElement = document.getElementById('bombs');
+const flagsElement = document.getElementById('flags');
+const restartButton = document.querySelector('.restart');
 
-let mineMap;
-let bombs = 10;
-let flags = 10;
-let countdown;
-let interval;
-let hiddenBoxes;
+class Minesweeper {
+    constructor(gridSize, totalBombs, initialCountdown) {
+        this.gridSize = gridSize;
+        this.totalBombs = totalBombs;
+        this.initialCountdown = initialCountdown;
+        this.remainingFlags = totalBombs;
+        this.countdown = initialCountdown;
+        this.interval = null;
+        this.mineGrid = [];
+        this.hiddenBoxesCount = 0;
 
-function init() {
-    clearTable();
-    createMap(SIZE);
-    addRowElements(SIZE);
-
-    interval = null;
-    remainingFlags = flags;
-    countdown = 100;
-    hiddenBoxes = document.querySelectorAll('box').length;
-
-    updateCountdown();
-    updateElBombs();
-    updateElFlags();
-    startCountdown();
-
-    elRestartBtn.classList.add('hide');
-}
-
-function startCountdown() {
-    interval = setInterval(updateCountdown, 1000);
-}
-
-function updateCountdown() {
-    if (countdown === 0) {
-        handleGameOver();
-        clearInterval(interval);
-        return;
+        this.initializeGame();
     }
 
-    countdown--;
-    elCountdown.innerText = countdown;
-}
+    initializeGame() {
+        this.clearGrid();
+        this.generateMineGrid();
+        this.createGridElements();
 
-function updateElBombs() {
-    elBombs.innerHTML = bombs;
-}
+        this.interval = null;
+        this.remainingFlags = this.totalBombs;
+        this.countdown = this.initialCountdown;
+        this.hiddenBoxesCount = document.querySelectorAll('.box.hidden').length;
 
-function updateElFlags() {
-    elFlags.innerHTML = remainingFlags;
-}
+        this.updateCountdownDisplay();
+        this.updateBombsDisplay();
+        this.updateFlagsDisplay();
+        this.startCountdown();
 
-function clearTable() {
-    elTable.innerHTML = '';
-}
-
-function createMap(size) {
-    mineMap = Array.from({ length: size }, () => Array(size).fill(0));
-    placeBombs(bombs);
-}
-
-function placeBombs(quantity) {
-    for (let i = 0; i < quantity; i++) {
-        placeBombRandomly();
+        restartButton.classList.add('hide');
     }
-}
 
-function placeBombRandomly() {
-    let randRow, randCol;
-    do {
-        randRow = Math.floor(Math.random() * mineMap.length);
-        randCol = Math.floor(Math.random() * mineMap.length);
-    } while (mineMap[randRow][randCol] === -1);
-    mineMap[randRow][randCol] = -1;
-}
+    startCountdown() {
+        this.interval = setInterval(() => this.updateCountdown(), 1000);
+    }
 
-function countBombsAround(i, j) {
-    if (mineMap[i][j] === -1) return -1;
-    let count = 0;
-    for (let x = -1; x <= 1; x++) {
-        for (let y = -1; y <= 1; y++) {
-            if (x === 0 && y === 0) continue;
-            const ni = i + x, nj = j + y;
-            if (boxExist(ni, nj) && mineMap[ni][nj] === -1) count++;
+    updateCountdown() {
+        if (this.countdown === 0) {
+            this.endGame();
+            clearInterval(this.interval);
+            return;
+        }
+
+        this.countdown--;
+        this.updateCountdownDisplay();
+    }
+
+    updateCountdownDisplay(){
+        countdownElement.innerText = this.countdown;
+    }
+
+    updateBombsDisplay() {
+        bombsElement.innerHTML = this.totalBombs;
+    }
+
+    updateFlagsDisplay() {
+        flagsElement.innerHTML = this.remainingFlags;
+    }
+
+    clearGrid() {
+        tableElement.innerHTML = '';
+    }
+
+    generateMineGrid() {
+        this.mineGrid = Array.from({ length: this.gridSize }, () => Array(this.gridSize).fill(0));
+        this.placeBombsRandomly(this.totalBombs);
+    }
+
+    placeBombsRandomly(quantity) {
+        for (let i = 0; i < quantity; i++) {
+            this.placeSingleBombRandomly();
         }
     }
-    return count;
-}
 
-function addRowElements(size) {
-    for (let i = 0; i < size; i++) {
-        const elRow = document.createElement('div');
-        elRow.id = `${i}`;
-        elRow.classList.add('row');
-        addBoxElements(elRow, size);
-        elTable.appendChild(elRow);
+    placeSingleBombRandomly() {
+        let randomRow, randomCol;
+        do {
+            randomRow = Math.floor(Math.random() * this.gridSize);
+            randomCol = Math.floor(Math.random() * this.gridSize);
+        } while (this.mineGrid[randomRow][randomCol] === -1);
+        this.mineGrid[randomRow][randomCol] = -1;
     }
-}
 
-function addBoxElements(elRow, size) {
-    for (let j = 0; j < size; j++) {
-        const elBox = document.createElement('div');
-        elBox.id = `${elRow.id}-${j}`;
-        elBox.classList.add('box', 'hidden');
-        elBox.addEventListener('click', handleBoxClick);
-        elBox.addEventListener('contextmenu', placeFlag);
-        elRow.appendChild(elBox);
+    countAdjacentBombs(row, col) {
+        if (this.mineGrid[row][col] === -1) return -1;
+        let count = 0;
+        for (let x = -1; x <= 1; x++) {
+            for (let y = -1; y <= 1; y++) {
+                if (x === 0 && y === 0) continue;
+                const newRow = row + x, newCol = col + y;
+                if (this.isValidBox(newRow, newCol) && this.mineGrid[newRow][newCol] === -1) count++;
+            }
+        }
+        return count;
     }
-}
 
-function handleBoxClick(e) {
-    const elBox = e.target;
-    const [i, j] = getBoxElementCoordinates(elBox);
-    if (mineMap[i][j] === -1) {
-        handleGameOver();
-    } else {
-        revealBox(elBox);
-        updateHiddenBoxes();
-
-        if (hiddenBoxes === bombs) {
-            handleGameWin();
+    createGridElements() {
+        for (let i = 0; i < this.gridSize; i++) {
+            const rowElement = document.createElement('div');
+            rowElement.id = `${i}`;
+            rowElement.classList.add('row');
+            this.createBoxElements(rowElement);
+            tableElement.appendChild(rowElement);
         }
     }
-}
 
-// Function to update the flag status of the box
-function toggleFlag(elBox) {
-    elBox.classList.toggle('flagged');
-    elBox.innerText = elBox.classList.contains('flagged') ? '🚩' : '';
-}
-
-// Function to handle flagging logic
-function handleFlagging(elBox) {
-    if (elBox.classList.contains('flagged')) {
-        remainingFlags++;
-    } else {
-        if (remainingFlags === 0) {
-            return false; // No flags left to place
+    createBoxElements(rowElement) {
+        for (let j = 0; j < this.gridSize; j++) {
+            const boxElement = document.createElement('div');
+            boxElement.id = `${rowElement.id}-${j}`;
+            boxElement.classList.add('box', 'hidden');
+            boxElement.addEventListener('click', (e) => this.handleBoxClick(e));
+            boxElement.addEventListener('contextmenu', (e) => this.toggleFlag(e));
+            rowElement.appendChild(boxElement);
         }
-        remainingFlags--;
     }
-    return true;
-}
 
-// Main function to place or remove a flag
-function placeFlag(event) {
-    event.preventDefault();
+    handleBoxClick(event) {
+        const boxElement = event.target;
+        const [row, col] = this.getBoxCoordinates(boxElement);
+        if (this.mineGrid[row][col] === -1) {
+            this.endGame();
+        } else {
+            this.revealBox(boxElement);
+            this.updateHiddenBoxesCount();
 
-    const elBox = event.target;
+            if (this.hiddenBoxesCount === this.totalBombs) {
+                this.handleGameWin();
+            }
+        }
+    }
 
-    if (handleFlagging(elBox)) {
-        toggleFlag(elBox);
-        updateElFlags();
+    toggleFlagStatus(boxElement) {
+        boxElement.classList.toggle('flagged');
+        boxElement.innerText = boxElement.classList.contains('flagged') ? '🚩' : '';
+    }
+
+    manageFlagPlacement(boxElement) {
+        if (boxElement.classList.contains('flagged')) {
+            this.remainingFlags++;
+        } else {
+            if (this.remainingFlags === 0) {
+                return false; // No flags left to place
+            }
+            this.remainingFlags--;
+        }
+        return true;
+    }
+
+    toggleFlag(event) {
+        event.preventDefault();
+        const boxElement = event.target;
+
+        if (this.manageFlagPlacement(boxElement)) {
+            this.toggleFlagStatus(boxElement);
+            this.updateFlagsDisplay();
+        }
+    }
+
+    getBoxCoordinates(boxElement) {
+        return boxElement.id.split('-').map(Number);
+    }
+
+    updateBoxElement(boxElement) {
+        const [row, col] = this.getBoxCoordinates(boxElement);
+        const bombsAround = this.countAdjacentBombs(row, col);
+        this.mineGrid[row][col] = bombsAround;
+        boxElement.classList.remove('hidden', 'flagged');
+
+        boxElement.innerText = bombsAround === -1 ? '💣' : bombsAround !== 0 ? bombsAround : '';
+        boxElement.className = 'box ' + this.getColorClass(bombsAround);
+    }
+
+    getColorClass(bombsAround) {
+        switch (bombsAround) {
+            case 1: return 'green';
+            case 2: return 'blue';
+            case 3: return 'red';
+            case 4: return 'purple';
+            case 5: return 'orange';
+            default: return 'gray';
+        }
+    }
+
+    revealBox(boxElement) {
+        if (!boxElement || !boxElement.classList.contains('hidden') || boxElement.classList.contains('flagged')) return;
+        this.updateBoxElement(boxElement);
+        const [row, col] = this.getBoxCoordinates(boxElement);
+        if (this.mineGrid[row][col] === 0) {
+            this.revealAdjacentEmptyBoxes(row, col);
+        }
+    }
+
+    revealAdjacentEmptyBoxes(row, col) {
+        const directions = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        directions.forEach(([dx, dy]) => {
+            const newRow = row + dx, newCol = col + dy;
+            if (this.isValidBox(newRow, newCol)) this.revealBox(this.getBoxByCoordinates(newRow, newCol));
+        });
+    }
+
+    getBoxByCoordinates(row, col) {
+        return document.getElementById(`${row}-${col}`);
+    }
+
+    isValidBox(row, col) {
+        return row >= 0 && row < this.gridSize && col >= 0 && col < this.gridSize;
+    }
+
+    endGame() {
+        clearInterval(this.interval);
+        document.querySelectorAll('.box').forEach(boxElement => this.updateBoxElement(boxElement));
+        restartButton.classList.remove('hide');
+    }
+
+    handleGameWin() {
+        clearInterval(this.interval);
+    }
+
+    updateHiddenBoxesCount() {
+        this.hiddenBoxesCount = document.querySelectorAll('.box.hidden').length;
     }
 }
 
-
-function getBoxElementCoordinates(elBox) {
-    return elBox.id.split('-').map(Number);
-}
-
-function updateBoxElement(elBox) {
-    const [i, j] = getBoxElementCoordinates(elBox);
-    const bombsAround = countBombsAround(i, j);
-    mineMap[i][j] = bombsAround;
-    elBox.classList.remove('hidden', 'flagged');
-
-    elBox.innerText = bombsAround === -1 ? '💣' : bombsAround !== 0 ? bombsAround : '';
-    elBox.className = 'box ' + getColorClass(bombsAround);
-}
-
-function getColorClass(bombsAround) {
-    switch (bombsAround) {
-        case 1: return 'green';
-        case 2: return 'blue';
-        case 3: return 'red';
-        case 4: return 'purple';
-        case 5: return 'orange'
-        default: return 'gray';
-    }
-}
-
-function revealBox(elBox) {
-    if (!elBox || !elBox.classList.contains('hidden') || elBox.classList.contains('flagged')) return;
-    updateBoxElement(elBox);
-    const [i, j] = getBoxElementCoordinates(elBox);
-    if (mineMap[i][j] === 0) {
-        checkEmptyBoxesAround(i, j);
-    }
-}
-
-function checkEmptyBoxesAround(i, j) {
-    const directions = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-    directions.forEach(([dx, dy]) => {
-        const ni = i + dx, nj = j + dy;
-        if (boxExist(ni, nj)) revealBox(getBoxByCoordinates(ni, nj));
-    });
-}
-
-function getBoxByCoordinates(i, j) {
-    return document.getElementById(`${i}-${j}`);
-}
-
-function boxExist(i, j) {
-    return i >= 0 && i < mineMap.length && j >= 0 && j < mineMap.length;
-}
-
-function handleGameOver() {
-    clearInterval(interval);
-    document.querySelectorAll('.box').forEach(updateBoxElement);
-    elRestartBtn.classList.remove('hide');
-}
-
-function handleGameWin() {
-    clearInterval(interval);
-}
-
-function updateHiddenBoxes() {
-    let countHiddenBoxes = 0;
-    document.querySelectorAll('.box').forEach(b => { if (b.innerHTML === '') countHiddenBoxes++; });
-    hiddenBoxes = countHiddenBoxes;
-}
-
-elRestartBtn.addEventListener('click', init);
-
-init();
+const game = new Minesweeper(GRID_SIZE, TOTAL_BOMBS, INITIAL_COUNTDOWN);
+restartButton.addEventListener('click', () => game.initializeGame());
