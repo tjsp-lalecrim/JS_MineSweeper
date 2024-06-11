@@ -225,6 +225,7 @@ class Minesweeper {
 
     handleGameWin() {
         clearInterval(this.interval);
+        alert('Congratulations! You win!');
     }
 
     updateHiddenBoxesCount() {
