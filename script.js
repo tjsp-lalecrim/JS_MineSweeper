@@ -1,4 +1,4 @@
-const ROWS = 10;
+const SIZE = 10;
 
 const elTable = document.querySelector('.table');
 const elCountdown = document.getElementById('countdown');
@@ -7,17 +7,23 @@ const elFlags = document.getElementById('flags');
 
 let mineMap = [];
 let bombs = 10;
-let flags = remainingFlags = 10;
-let countdown = 100;
+let flags = 10;
+let countdown;
 let interval = null;
+let hiddenBoxes;
 
 function init() {
     clearTable();
-    createMap(ROWS);
-    addRowElements(ROWS);
+    createMap(SIZE);
+    addRowElements(SIZE);
+
+    remainingFlags = flags;
+    countdown = 100;
+    hiddenBoxes = SIZE * SIZE;
+    
     updateCountdown();
-    updateBombs();
-    updateFlags();
+    updateElBombs();
+    updateElFlags();
     startCountdown();
 }
 
@@ -36,11 +42,11 @@ function updateCountdown() {
     elCountdown.innerText = countdown;
 }
 
-function updateBombs() {
+function updateElBombs() {
     elBombs.innerHTML = bombs;
 }
 
-function updateFlags() {
+function updateElFlags() {
     elFlags.innerHTML = remainingFlags;
 }
 
@@ -109,6 +115,11 @@ function handleBoxClick(e) {
         handleGameOver();
     } else {
         revealBox(elBox);
+        updateHiddenBoxes();
+
+        if(hiddenBoxes === bombs){
+            handleGameWin();
+        }
     }
 }
 
@@ -139,7 +150,7 @@ function placeFlag(event) {
 
     if (handleFlagging(elBox)) {
         toggleFlag(elBox);
-        updateFlags();
+        updateElFlags();
     }
 }
 
@@ -194,7 +205,18 @@ function boxExist(i, j) {
 }
 
 function handleGameOver() {
+    clearInterval(interval);
     document.querySelectorAll('.box').forEach(updateBoxElement);
+}
+
+function handleGameWin(){
+    clearInterval(interval);
+}
+
+function updateHiddenBoxes() {
+    let countHiddenBoxes = 0;
+    document.querySelectorAll('.box').forEach(b => { if (b.innerHTML === '') countHiddenBoxes++; });
+    hiddenBoxes = countHiddenBoxes;
 }
 
 init();
