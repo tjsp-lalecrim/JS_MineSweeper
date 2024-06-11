@@ -1,8 +1,10 @@
 const ROWS = 10;
+
 const elTable = document.querySelector('.table');
 const elCountdown = document.getElementById('countdown');
 const elBombs = document.getElementById('bombs');
 const elFlags = document.getElementById('flags');
+
 let mineMap = [];
 let bombs = 10;
 let flags = remainingFlags = 10;
@@ -110,27 +112,37 @@ function handleBoxClick(e) {
     }
 }
 
+// Function to update the flag status of the box
+function toggleFlag(elBox) {
+    elBox.classList.toggle('flagged');
+    elBox.innerText = elBox.classList.contains('flagged') ? '🚩' : '';
+}
+
+// Function to handle flagging logic
+function handleFlagging(elBox) {
+    if (elBox.classList.contains('flagged')) {
+        remainingFlags++;
+    } else {
+        if (remainingFlags === 0) {
+            return false; // No flags left to place
+        }
+        remainingFlags--;
+    }
+    return true;
+}
+
+// Main function to place or remove a flag
 function placeFlag(event) {
     event.preventDefault();
 
     const elBox = event.target;
 
-    if (elBox.classList.contains('flagged')) {
-        elBox.classList.toggle('flagged');
-        elBox.innerText = elBox.classList.contains('flagged') ? '🚩' : '';
-        remainingFlags++;
-        updateFlags();
-    } else {
-        if (remainingFlags === 0) {
-            return;
-        }
-
-        elBox.classList.toggle('flagged');
-        elBox.innerText = elBox.classList.contains('flagged') ? '🚩' : '';
-        remainingFlags--;
+    if (handleFlagging(elBox)) {
+        toggleFlag(elBox);
         updateFlags();
     }
 }
+
 
 function getBoxElementCoordinates(elBox) {
     return elBox.id.split('-').map(Number);
