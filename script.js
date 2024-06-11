@@ -27,6 +27,8 @@ function init() {
     updateElBombs();
     updateElFlags();
     startCountdown();
+
+    elRestartBtn.classList.add('hide');
 }
 
 function startCountdown() {
