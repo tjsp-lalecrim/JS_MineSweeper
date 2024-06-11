@@ -20,7 +20,7 @@ function init() {
     remainingFlags = flags;
     countdown = 100;
     hiddenBoxes = SIZE * SIZE;
-    
+
     updateCountdown();
     updateElBombs();
     updateElFlags();
@@ -117,7 +117,7 @@ function handleBoxClick(e) {
         revealBox(elBox);
         updateHiddenBoxes();
 
-        if(hiddenBoxes === bombs){
+        if (hiddenBoxes === bombs) {
             handleGameWin();
         }
     }
@@ -164,7 +164,8 @@ function updateBoxElement(elBox) {
     const bombsAround = countBombsAround(i, j);
     mineMap[i][j] = bombsAround;
     elBox.classList.remove('hidden', 'flagged');
-    elBox.innerText = bombsAround !== 0 ? bombsAround : '';
+
+    elBox.innerText = bombsAround === -1 ? '💣' : bombsAround !== 0 ? bombsAround : '';
     elBox.className = 'box ' + getColorClass(bombsAround);
 }
 
@@ -209,7 +210,7 @@ function handleGameOver() {
     document.querySelectorAll('.box').forEach(updateBoxElement);
 }
 
-function handleGameWin(){
+function handleGameWin() {
     clearInterval(interval);
 }
 
