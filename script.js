@@ -1,11 +1,45 @@
 const ROWS = 10;
 const elTable = document.querySelector('.table');
+const elCountdown = document.getElementById('countdown');
+const elBombs = document.getElementById('bombs');
+const elFlags = document.getElementById('flags');
 let mineMap = [];
+let bombs = 10;
+let flags = remainingFlags = 10;
+let countdown = 100;
+let interval = null;
 
 function init() {
     clearTable();
     createMap(ROWS);
     addRowElements(ROWS);
+    updateCountdown();
+    updateBombs();
+    updateFlags();
+    startCountdown();
+}
+
+function startCountdown() {
+    interval = setInterval(updateCountdown, 1000);
+}
+
+function updateCountdown() {
+    if (countdown === 0) {
+        handleGameOver();
+        clearInterval(interval);
+        return;
+    }
+
+    countdown--;
+    elCountdown.innerText = countdown;
+}
+
+function updateBombs() {
+    elBombs.innerHTML = bombs;
+}
+
+function updateFlags() {
+    elFlags.innerHTML = remainingFlags;
 }
 
 function clearTable() {
@@ -14,7 +48,7 @@ function clearTable() {
 
 function createMap(size) {
     mineMap = Array.from({ length: size }, () => Array(size).fill(0));
-    placeBombs(size);
+    placeBombs(bombs);
 }
 
 function placeBombs(quantity) {
@@ -78,9 +112,24 @@ function handleBoxClick(e) {
 
 function placeFlag(event) {
     event.preventDefault();
+
     const elBox = event.target;
-    elBox.classList.toggle('flagged');
-    elBox.innerText = elBox.classList.contains('flagged') ? '🚩' : '';
+
+    if (elBox.classList.contains('flagged')) {
+        elBox.classList.toggle('flagged');
+        elBox.innerText = elBox.classList.contains('flagged') ? '🚩' : '';
+        remainingFlags++;
+        updateFlags();
+    } else {
+        if (remainingFlags === 0) {
+            return;
+        }
+
+        elBox.classList.toggle('flagged');
+        elBox.innerText = elBox.classList.contains('flagged') ? '🚩' : '';
+        remainingFlags--;
+        updateFlags();
+    }
 }
 
 function getBoxElementCoordinates(elBox) {
