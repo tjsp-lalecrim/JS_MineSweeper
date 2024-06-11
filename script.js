@@ -4,12 +4,13 @@ const elTable = document.querySelector('.table');
 const elCountdown = document.getElementById('countdown');
 const elBombs = document.getElementById('bombs');
 const elFlags = document.getElementById('flags');
+const elRestartBtn = document.querySelector('.restart');
 
-let mineMap = [];
+let mineMap;
 let bombs = 10;
 let flags = 10;
 let countdown;
-let interval = null;
+let interval;
 let hiddenBoxes;
 
 function init() {
@@ -17,6 +18,7 @@ function init() {
     createMap(SIZE);
     addRowElements(SIZE);
 
+    interval = null;
     remainingFlags = flags;
     countdown = 100;
     hiddenBoxes = SIZE * SIZE;
@@ -208,6 +210,7 @@ function boxExist(i, j) {
 function handleGameOver() {
     clearInterval(interval);
     document.querySelectorAll('.box').forEach(updateBoxElement);
+    elRestartBtn.classList.remove('hide');
 }
 
 function handleGameWin() {
@@ -219,5 +222,7 @@ function updateHiddenBoxes() {
     document.querySelectorAll('.box').forEach(b => { if (b.innerHTML === '') countHiddenBoxes++; });
     hiddenBoxes = countHiddenBoxes;
 }
+
+elRestartBtn.addEventListener('click', init);
 
 init();

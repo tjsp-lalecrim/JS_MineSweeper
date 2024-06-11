@@ -83,3 +83,12 @@ header {
     background: #FFD700;
     /* Optional: change the background color for flagged boxes */
 }
+
+.restart {
+    margin-top: 10px;
+}
+
+.restart.hide {
+    visibility: hidden;
+    pointer-events: none;
+}
