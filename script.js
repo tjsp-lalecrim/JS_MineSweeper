@@ -21,7 +21,7 @@ function init() {
     interval = null;
     remainingFlags = flags;
     countdown = 100;
-    hiddenBoxes = SIZE * SIZE;
+    hiddenBoxes = document.querySelectorAll('box').length;
 
     updateCountdown();
     updateElBombs();
